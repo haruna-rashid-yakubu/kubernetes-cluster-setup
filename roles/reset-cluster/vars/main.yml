@@ -1,0 +1,12 @@
+---
+# vars file for roles/reset-cluster
+kube_setup: 
+  - kubelet
+  - kubeadm
+  - kubectl
+  - firewalld
+
+kube_utils: 
+  - apt-transport-https 
+  - ca-certificates 
+  - curl

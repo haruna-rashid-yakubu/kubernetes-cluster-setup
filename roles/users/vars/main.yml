@@ -1,0 +1,9 @@
+---
+# vars file for roles/users
+users:
+  - name: NAME
+    ssh_key: KEY_PATH
+  - name: NAME 
+    ssh_key: KEY_PATH
+  - name: NAME 
+    ssh_key: KEY_PATH

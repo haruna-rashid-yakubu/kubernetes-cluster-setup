@@ -1,0 +1,31 @@
+---
+# tasks file for roles/users
+- name: "Creating users ."
+  become: yes
+  user:
+    name: "{{ item.name }}"
+    shell: /bin/bash
+  with_items: "{{ users }}"
+
+- name: "Set SSH authorized keys for users ."
+  become: yes
+  authorized_key:
+    user: "{{ item.name }}"
+    key: "{{ lookup('file', item.ssh_key)}}"
+  with_items: "{{ users }}"
+
+- name: "Give sudo access to users without password ."
+  become: yes
+  lineinfile:
+    dest: /etc/sudoers
+    line: "{{ item.name }} ALL=(ALL) NOPASSWD: ALL"
+    validate: visudo -cf %s
+  with_items: "{{ users }}"
+  when: ansible_distribution == 'Ubuntu' 
+
+# - name: Generate certificates 
+#   become: yes
+#   command: |  
+#     mkdir "{{ item.name }}-user" && cd "{{ item.name }}-user"; 
+
+#   with_items: "{{ users }}"

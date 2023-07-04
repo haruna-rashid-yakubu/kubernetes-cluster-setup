@@ -1,0 +1,7 @@
+- name: "K8s cluster setup"
+  hosts: all 
+  become: true
+  vars: 
+    - ansible_sudo_pass: love
+  roles: 
+    - kube-setup

@@ -1,0 +1,14 @@
+---
+# tasks file for roles/reset-cluster
+
+- name: "Reset kubeadm configurations"
+  shell: echo y | sudo kubeadm reset && sudo rm -rf /etc/cni/net.d
+
+
+- name: "Uninstall all  Kubernetes packages ."
+  become: yes
+  apt:
+    name: "{{ item }}"
+    state: absent
+  loop: "{{ kube_setup }}"
+

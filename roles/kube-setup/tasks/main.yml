@@ -1,0 +1,75 @@
+---
+# tasks file for roles/kube-setup
+
+- name: "update all apt repository "
+  apt: 
+    update_cache: yes
+
+- name: "disable swap"
+  shell: |
+          sudo swapoff -a
+          sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+- name: "install req. packages"
+  apt: 
+    update_cache: yes
+    name: "{{ item }}"
+    state: present 
+  loop: "{{ kube_utils }}"
+  
+- name: "install and configure dependencies"
+  shell: |
+          curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+
+- name: "Create kubernetes repo file"
+  file:
+    path: "/etc/apt/sources.list.d/kubernetes.list"
+    state: "touch"
+
+- name: Add K8s Source
+  blockinfile:
+    path: "/etc/apt/sources.list.d/kubernetes.list"
+    block: |
+          deb https://apt.kubernetes.io/ kubernetes-xenial main
+
+
+- name: Install Kubernetes packages
+  become: yes
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  loop: "{{ kube_setup }}"
+  
+- name: Master nodes tasks
+  block:
+    - ansible.builtin.include_tasks:
+        file: master.yml
+  rescue:
+    - name: Error handling task
+      shell: echo y | sudo kubeadm reset && sudo rm -rf /etc/cni/net.d
+  when: inventory_hostname == 'master-node'
+
+# - name: Worker nodes tasks
+#   block:
+#     - ansible.builtin.include_tasks:
+#         file: worker.yml
+#   rescue:
+#     - name: Error handling task
+#       shell: echo y | sudo kubeadm reset && sudo rm -rf /etc/cni/net.d
+#   when: inventory_hostname != 'master-node'
+
+- name: install Pod network
+  become: yes
+  become_user: harouna
+  shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml 
+  when: inventory_hostname == 'master-node'
+
+- name: last task 
+  systemd: 
+    name: "{{ item }}"
+    state: restarted
+  loop: 
+    - containerd
+    - kubelet 
+    

@@ -1,0 +1,32 @@
+---
+# tasks file for roles/user-cert
+---
+- name: Generate private key
+  command: openssl genrsa -out {{ csr_name }}.key 2048
+  register: gen_private_key
+
+- name: Create CSR
+  command: openssl req -new -key {{ csr_name }}.key -out {{ csr_name }}.csr -subj "/CN={{ common_name }}"
+  register: create_csr
+  when: gen_private_key is succeeded
+
+- name: Submit CSR to Kubernetes
+  command: kubectl apply -f csr.yaml
+  args:
+    executable: /bin/bash
+  register: submit_csr
+  when: create_csr is succeeded
+
+- name: Approve CSR
+  command: kubectl certificate approve {{ csr_name }}
+  args:
+    executable: /bin/bash
+  register: approve_csr
+  when: submit_csr is succeeded
+
+- name: Retrieve approved certificate
+  command: kubectl get csr {{ csr_name }} -o jsonpath='{.status.certificate}' | base64 --decode > {{ csr_name }}.crt
+  args:
+    executable: /bin/bash
+  register: retrieve_certificate
+  when: approve_csr is succeeded

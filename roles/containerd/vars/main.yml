@@ -1,0 +1,3 @@
+---
+# vars file for roles/containerd
+dest_file_containerd: /etc/containerd/config.toml

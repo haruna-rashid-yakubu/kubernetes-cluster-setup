@@ -1,0 +1,44 @@
+---
+- name: "Edit the configuration file of containerd ."
+  blockinfile:
+    path: "/etc/modules-load.d/containerd.conf"
+    block: |
+          overlay
+          br_netfilter
+    create: yes
+
+# - name: "Activation of Kernel Modules ."
+#   shell: |
+#           sudo modprobe overlay
+#           sudo modprobe br_netfilter
+
+- name: "Creating kubernetes conf file ."
+  file:
+    path: "/etc/sysctl.d/99-kubernetes-cri.conf"
+    state: "touch"
+
+- name: "Configuration for networking ."
+  blockinfile:
+    path: "/etc/sysctl.d/99-kubernetes-cri.conf"
+    block: |
+           net.bridge.bridge-nf-call-iptables = 1
+           net.ipv4.ip_forward = 1
+           net.bridge.bridge-nf-call-ip6tables = 1
+
+- name: "Apply of new settings"
+  command: sudo sysctl --system
+
+- name: "Installation of containerd . "
+  shell: |
+          sudo apt-get update && sudo apt-get install -y containerd
+          sudo mkdir -p /etc/containerd
+          sudo containerd config default | sudo tee "{{ dest_file_containerd }}"
+          sudo sed -i 's/  SystemdCgroup = false/ SystemdCgroup = true/' "{{ dest_file_containerd }}"
+          sudo systemctl restart containerd
+
+- name: "Removing source lists . " 
+  shell: sudo rm -rf /etc/apt/sources.list.d/download_opensuse_org_repositories_devel_kubic_libcontainers_xUbuntu_22_04_Release_key.list
+
+- name: "Update necessary packages . "
+  apt:
+    update_cache: yes

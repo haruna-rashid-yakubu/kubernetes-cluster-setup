@@ -1,0 +1,3 @@
+[server]
+ master-node ansible_host=master 
+ worker-node ansible_host=worker 
